@@ -1,0 +1,316 @@
+---
+title: "Burger King"
+author: "Miguel Dias PG40968"
+date: "25/12/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+# Introduction
+
+The following statistical analysis uses the dataset relating to the nutritional data of various hamburgers, appetizers, sides, and desserts served at the Burger King chain of restaurants.
+
+It was intended to see the correlation that the amount of macronutrients such as protein, fat and sugar have in the total amount of calories in each food.
+In addition, it was intended to see whether the fact that the food had meat or was part of breakfast menus had an influence on the amount of calories.
+
+```{r dataset burger king}
+setwd("C:/Users/Dias/Desktop")
+burger = read.csv("burger_king.csv", sep = ";", dec = ".")
+library(ggplot2)
+library(corrplot)
+```
+
+# Exploratory data analysis:
+
+Here is a summary of the values found for the minimum, maximum, mean, median as well as the values of the quadrants and the amount of data not available (NA).
+
+The categorical variables were the presence of meat in the food or whether the food was part of a breakfast menu ("Meat" and "Breakfast" columns in the original dataset respectively) counting for the nominal groups "Yes" and "No ".
+To represent the categorical date, it was important to use the as.factor function to define the "Yes" and "No" groups as integers and then perform the data regression.
+
+```{r}
+summary(burger)
+as.factor(burger$Meat)
+as.factor(burger$Breakfast)
+
+```
+
+### Quantitative variables
+
+Histograms were made with the main variables to be used, with the continuous dependent variable corresponding to the column of calories and the independent variables the amount of protein, fat and carbohydrates. In this way, it is possible to visualize the number of foods that fall within a macronutrient quantification interval.
+
+```{r}
+
+
+#Protein
+ggplot(burger, aes(x=Protein)) + 
+ geom_histogram(aes(y=..density..), colour="black", fill="white")+
+ geom_density(alpha=.2, fill="#FF6666")
+
+#Carbs
+ggplot(burger, aes(x=Carbs)) + 
+ geom_histogram(aes(y=..density..), colour="black", fill="white")+
+ geom_density(alpha=.2, fill="#FF6666")
+
+#Fat
+ggplot(burger, aes(x=Fat)) + 
+ geom_histogram(aes(y=..density..), colour="black", fill="white")+
+ geom_density(alpha=.2, fill="#FF6666")
+
+#Calories
+ggplot(burger, aes(x=Calories)) + 
+ geom_histogram(aes(y=..density..), colour="black", fill="white")+
+ geom_density(alpha=.2, fill="#FF6666")
+
+
+
+```
+
+
+It is possible to see that most of the foods mostly have an amount between 250 and 500 calories, 5 to 40 grams of protein, 25 to 50 grams of carbohydrates and between 10 and 30 grams of fat respectively for each histogram represented. There are 3 foods that have a relatively high amount of proteins, hydrates and fat as well as a high caloric content being represented by the bars located further to the right of the density function graphs.
+
+The functions do not follow a normal distribution, and for the hydrate function there are two maximum peaks. This may indicate the existence of mixing distributions of other types.
+
+### Categorical variables
+
+For this type of variables, boxplots were made to characterize each nominal category. It was seen how the amount of calories varies depending on the type of food (if the food is breakfast) or if the food had meat.
+
+```{r boxplot variaveis categoricas}
+ggplot(burger, aes(Breakfast, Calories)) + 
+  geom_boxplot(aes(fill = Breakfast)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust =1)) + scale_x_discrete(name = 'Breakfast') 
+
+
+ggplot(burger, aes(Meat, Calories)) + 
+  geom_boxplot(aes(fill = Meat)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust =1)) + scale_x_discrete(name = 'Meat') 
+
+
+```
+
+For the breakfast variable, we see that the median is approximately the same for both categories. It is also possible to see that the interquartile range is slightly higher for foods that are not considered breakfast and in the case of foods that are breakfast there is a value for the third quartile slightly higher, however the foods classified as not being breakfast show more outliers and the maximum caloric value obtained is slightly higher in comparison.
+
+In the case of the boxplot created for the presence of meat, the most salient result is the greater width of the boxplot obtained for the "Yes" category and the fact that the median, interquartile range, maximum value and outliers are all higher in terms of calories compared to non-meat food. From a nutritional point of view this makes sense because meat is a very nutritionally dense food with a higher amount of fat, the most energetic macronutrient [reference: https://www.nal.usda.gov/fnic/how-many -calories-are-one-gram-fat-carbohydrate-or-protein].
+
+### Correlation of calories, protein, fat, carbohydrates:
+
+A corrplot was performed to determine the degree of correlation between all the variables under study.
+ 
+
+```{r}
+subc<-subset(burger,select = c(Calories,Protein ,Fat,Carbs))
+M<-cor(subc)
+corrplot(M, order = "AOE", addCoef.col = "grey")
+```
+
+It is possible to verify that the calorie variable presents the highest correlation with the fat variable (values close to one mean high correlation). Considering that 1 gram of fat has 9 calories[https://www.nal.usda.gov/fnic/how-many-calories-are-one-gram-fat-carbohydrate-or-protein], approximately twice as many calories present in the same amount of proteins or hydrates, this result is in line with expectations.
+
+On the other hand, the pairs of variables hydrates and protein as well as fat and hydrates show low correlation. This could be explained by the fact that the molecules are very different, however, the protein and fat pair has a correlation value of 0.76 so this could not be the reason. Another reason that could lead to the high correlation value between fat and protein is the fact that meat is mainly made up of these macronutrients (and a low percentage of carbohydrates) and this catering chain mainly serves food with meat.
+
+# Linear model of the dependent variable
+
+The results relative to the linear model as well as the sketched graphs are shown below.
+
+
+```{r}
+yhat=lm(Calories ~ Protein + Carbs + Fat + Meat + Breakfast,data = burger)
+summary(yhat)
+```
+The variables corresponding to the macronutrients have very low p-value levels, indicating a high statistical significance of these parameters in the model.
+For categorical variables, breakfast has a p-value less than 0.05 so it is statically relevant to the model.
+
+The p-value for meat, however, is greater than 0.05 and the nominal category "Yes" presents an estimation with a negative value. This negative value means that the values of the variable under study do not contribute to the dependent variable, which is in disagreement with what was observed in the boxplots outlined above.
+However, the high R-squared value of 0.9987 means that the placed parameters explain almost 100% of the variation in calories, so the inclusion of the meat variable could be included without compromising the integrity of the model.
+Other data that support the linear model are the elevated F-test statistic value and the corresponding reduced p-value.
+
+
+
+# Stepwise regression
+
+In order to better validate the chosen linear model, a "stepwise" regression was used. This is a method of adjusting regression models in which the choice of variables for model prediction is performed by an automatic process using an algorithm or add the variables one by one, depending on the chosen direction, to find the most suitable model.
+
+This type of regression uses an error estimator called the Akaike Information Criterion (AIC) that measures the relative quality of statistical models for a given set of data. Given a collection of models for the data, AIC estimates the quality of each model, relative to each of the other models. The smaller the calculated AIC value, the better the model.
+
+
+### Backward
+
+First, this regression was carried out with the "backward" direction, with the results shown below. In this direction the AIC value is calculated taking into account all the variables and then removes the variables that decrease the AIC value.
+
+
+```{r}
+step_b<-step(yhat,direction = "backward")
+```
+
+This regression started with an AIC value of 524.37, which was reduced to 524.21 by removing the meat variable. Of all the parameters offered, this was the most disposable and the only one that did not compromise the viability of the model in any way, which goes somewhat against the fact that in the previously performed regression, this parameter received a p-value greater than 0.05. However, it is important to note that the difference between including this variable in the study or not is extremely minimal and if a statistician wanted to include it in the linear model, the validity of the model would not suffer much.
+
+The same that was said now can be said for the breakfast variable, the difference between including it in the model or not is in the hands of the person who deals with these results, in this case if it were removed the AIC value would rise to 533.24, an increase of only 7 points.
+
+The variables that correspond to the macronutrients, in turn, are too important for this study, if they are removed the AIC value will increase significantly and the model will lose quality.
+
+
+### Forward
+
+Regressions with this direction add variables in order to make the AIC value go down. The result for the AIC value in this case was equal to 524.37, maintaining the categorical variable for meat.
+
+```{r}
+step_f<-step(yhat,direction = "forward")
+
+```
+
+### Both
+
+Finally, a regression was performed considering both directions. At the beginning, the regression calculated the AIC with all the variables being the value 524.37 and in the second part it removed the meat variable and the AIC value went down again to 524.21. In the stepwise results it was shown that the addition of meat in the model would increase the AIC value back to the starting value.
+
+```{r}
+step_bo<-step(yhat,direction = "both")
+```
+
+It is thus concluded that the inclusion of all variables follows an optimal linear model for data analysis.
+
+
+# Verification of waste conditions
+
+Now you can check the conditions of the residuals using the linear model after going through the stepwise algorithm. To avoid redundancy, only the graphs of the conditions of the residuals related to the "stepwise" regression with the "backward" direction were presented. Below is the regression without using the algorithm (that is, it includes all variables) and with the stepwise algorithm.
+```{r}
+summary(yhat)
+summary(step_b)
+```
+
+Although the values are slightly different, the points that were made in the regression paragraph for the linear model remain the same. As long as the F statistic is high and the p-value reduced and less than 0.05, the linear model is considered to be well adjusted to the results.
+
+
+# Linear model plots
+
+```{r}
+plot(step_b)
+```
+
+The results presented here can be summarized as follows:
+
+-In the residuals vs fitted graph, the residual values follow an approximately homogeneous continuous variance by the red line showing 3 outliers represented by the dataset data at positions 104, 69 and 18.
+
+-The Normal Q-Q plot allows us to check if the data follow a normal distribution. If the linear line passes through the points relative to the quantiles of the residuals as a function of the quantiles of a standard normal distribution, it can be stated that the data follow a normal distribution. In this case, this is not the case due to the outliers referred to in the previous point.
+
+-In this model no leverages were found due to the fact that there are no points located in the area between the two red lines in the plot of residuals as a function of leverage. Values that are outliers however are influential observations due to having extreme values of y.
+
+### Normality and zero mean
+
+Another way to confirm whether or not the statistic follows a normal distribution is through a shapiro test.
+
+```{r}
+shapiro.test(step_b$residuals)
+```
+
+To be considered as normally distributed, the residuals should give a w-value equal to or very close to 1. If the p-value is smaller than the chosen alpha level, the null hypothesis that the data are normally distributed is rejected. For both conditions the statistical test proves that there is no normal distribution in this dataset.
+
+
+### Cook distance check
+
+It was seen if there were points of cook distance above 1 unit. The result below returned a null vector indicating the inexistence of these points.
+
+
+```{r distancia de cook}
+cook = cooks.distance(step_b)
+pontInf=which(cook>1)  # Para ver os pontos com distância de cook superior a 1 unidade
+pontInf
+```
+### Residual outliers
+
+The visual verification of the residuals considered as outliers is represented in the following boxplot.
+
+```{r}
+boxplot(step_b$residuals,col=3)
+```
+
+4 outlier points were found. To obtain more information about these points, the boxplot.stats function was used.
+
+```{r}
+boxplot.stats(step_b$residuals)
+```
+
+It is possible to extract from this function that the data in the dataset that originate these residues are in positions 18 , 69 , 103 and 104.
+
+
+# Linear model without outliers
+
+In this part, it was decided to remove the residual outliers resulting from the linear model to verify if the model would change in any way.
+In order not to change the results obtained previously, it was necessary to create a copy of the original dataset, only after this copy was created was the data removed in the positions that originated outlier residues.
+
+
+```{r}
+burger2 <- burger
+burger3 <- burger2[-c(18,69,103,104), ]
+```
+
+The stepwise algorithm was again used to calculate the AIC value assuming a "backward" direction.
+
+```{r}
+
+yhat2 <- lm(Calories ~ Protein + Carbs + Fat + Meat + Breakfast,data = burger3)
+step_b2 <-step(yhat2,direction = "backward")
+summary(step_b2)
+```
+As what happened before, this algorithm assumed the meat variable as the most disposable, however the most interesting result is the fact that the AIC value dropped significantly (from 524.21 in the model with outliers to 395.91 without them).
+
+Removing the meat variable also resulted in a slightly greater decrease in the AIC value compared to the original model, in this case the model without outliers (initially 397.82 then 395.91) dropped 1.91 points while in the linear model with outliers the decrease was only 0 ,16 points.
+This result is interesting for the analysis because the foods considered as outliers had meat in their constitution.
+
+Finally, it can be seen that there was a large increase in the value of the F statistic. The model with outliers had a value of 2.28e+04 while the adjusted model without residual outliers resulted in a value of 5.538e+04, more than twice the original value.
+
+### Linear model plots without outliers
+
+
+The main difference that removing these residuals should have on the model is to make it more normally distributed.
+
+
+
+```{r}
+plot(step_b2)
+boxplot(residuals(step_b2))
+```
+
+
+It can be seen in the quantile quantile graph that the line obtained is closer to a y=x line and most of the points are located on top of the line, however there are 3 new points that compromise normality relative to the data in positions 59, 113 and 115 .
+
+The homogeneity of the variance of the points, as expected, was not compromised. No new points considered as leverage were obtained either.
+
+The model originated a new outlier residue that can be seen in the boxplot obtained. One could try to remove this point to see how the model changes, but at this stage of the work there is already a fairly satisfactory model for the selected parameters.
+
+
+### Normality and zero mean
+
+Using a shapiro test again, a W value close to 1.0 and a p-value greater than 0.5 are obtained, which confirms that the model now has a normal distribution.
+
+```{r}
+shapiro.test(step_b2$residuals)
+```
+### Cook distance check
+
+Another null vector was obtained again, so there are no points.
+
+
+```{r}
+cook2 = cooks.distance(step_b2)
+pontInf2=which(cook>1)  # Para ver os pontos com distância de cook superior a 1 unidade
+pontInf2
+```
+
+# Conclusions
+
+With this analysis, it was possible to see that macronutrients are essential for calculating the calorie variable. The analysis confirms that fat has the greatest influence on the value of the caloric content of a food, which goes against the fact that this macronutrient is the most energetic.
+
+It appears that the fact that the food contains meat or is part of breakfast menus did not have as much influence on the caloric content as expected, in the case of meat the relationship with the dependent variable could be discarded without compromising with the feasibility of the linear model.
+
+Finally, it was curious to see that the estimated values for each macronutrient were very close to the actual values. For each macronutrient, the following calculations were obtained in the final linear model without residual outliers:
+
+- Protein had an estimated value in the final linear model equal to 3.95 (actual value = 4 calories/gram)
+- Hydrates had an estimated value in the final linear model equal to 3.92 (actual value = 4 calories/gram)
+- Fat had an estimated value in the final linear model equal to 9.04, (actual value = 9 calories/gram)
+
+This result together with the values obtained for the F statistic, p-value and the AIC value confirm that the statistical model is very well adjusted to confirm the initially suggested hypothesis.
+
+
+
+
+
+
+
